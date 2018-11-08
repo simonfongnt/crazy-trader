@@ -1,0 +1,2 @@
+# crazy-trader
+trading portfolio
