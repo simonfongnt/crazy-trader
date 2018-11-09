@@ -22,22 +22,16 @@ from pandas.tseries.offsets import BMonthEnd
 
 import matplotlib.pyplot as plt
 #%% Consts
-datainfo = {}
-datainfo['HSI']     = 'EQ'  # Close, Volume
-datainfo['VHSI']    = 'Vol' # Close
-datainfo['VIX']     = 'Vol' # Close
-datainfo['USDHKD']  = 'FX'  # Bid, Ask
-datainfo['XAUHKD']  = 'FX'  # Bid, Ask
-datainfo['HKDTRY']  = 'FX'  # Bid, Ask
-datainfo['USDTRY']  = 'FX'  # Bid, Ask
-datainfo['XRPUSD']  = 'FX'  # Bid, Ask
 #%% Params
+datainfo = {}
 quote = {}
 portfolio = {}
 logcols = ['Product', 'Strike', 'Maturity', 'Position', 'Open Date', 'Open Rate', 'Qty', 'Close Date', 'Close Rate', 'Handling', 'Unrealized P&L', 'Realized P&L', 'P&L%']
 trading_log = pd.DataFrame(columns=logcols)                 # initialize trading log
 #%% Dataset
-def initdataset():
+def initdataset(dataset):
+    global datainfo
+    datainfo = dataset
     start_day           = datetime.datetime(2018, 8,  7,  1,  1,  0) 
     end_day             = datetime.datetime(2018, 10, 31, 23, 59, 0)
     days = pd.date_range(start_day, end_day, freq='min')
@@ -55,6 +49,23 @@ def initdataset():
     quote['CALL']       = quote['HSI']
     #    print (key, market[key].isna().sum())
 #%% Functions
+def is_eqmktopen(time):
+    second = time.timestamp() % 86400
+    if time.weekday() < 6:
+        if second < 3600:
+            return True
+        if second >= 33300 and second < 43200:
+            return True
+        if second >= 46800 and second < 59700:
+            return True
+        if second >= 62100:
+            return True
+    return False
+
+def is_fxmktopen(time):
+    if time.weekday() < 6:
+        return True
+    return False
 # ------------------------------------------------------------------
 # Reset so get full traceback next time you run the script and a "real"
 # exception occurs
@@ -162,7 +173,7 @@ def trade(time, product, pos, rate, qty, K = None, T = None):
         if portfolio['cash'] < qty * forextohkd(time, product, rate) + handling:
             error (time, 'Not Enough Cash for trading...')
         portfolio['cash']                       = portfolio['cash'] - qty * forextohkd(time, product, rate) - portfolio['fee']
-        
+#        return pos
     # Close Position - ignore QTY
     else:
         for i in range(len(trading_log)):
@@ -190,7 +201,8 @@ def trade(time, product, pos, rate, qty, K = None, T = None):
                 # Enough $?
                 if portfolio['cash'] <= 0:
                     error (time, 'No more Money...')
-                
+#                return 'NONE'
+
 #    print (portfolio['cash'])
     
 def updatepos(time):
@@ -268,9 +280,9 @@ def exporttrades():
         df = trading_log.loc[(trading_log['Product'] == key) & (trading_log['Position'] == 'SHORT')]
         plt.plot(df['Open Date'],       df['Open Rate'],    'v', markersize=10, color='r')
         plt.plot(df['Close Date'],      df['Close Rate'],   'v', markersize=10, color='r', markerfacecolor='white', )
+        plt.title(key)
         plt.ylabel('Rate')
         plt.xlabel('Date')
-        plt.legend(loc=0)
     plt.show()
     
     portfolio['incurred fee']   = trading_log['Handling'].sum()
