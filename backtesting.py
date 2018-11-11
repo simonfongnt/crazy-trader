@@ -36,14 +36,16 @@ dataset['USDTRY']   = 'FX'       # Bid, Ask
 dataset['XRPUSD']   = 'FX'       # Bid, Ask
 # load dataset and setup initial cash + default handling fee
 platform = backtest(10000000, 100, dataset)
-#%% Backtesting
+#%% Backtest Params
 start   = '2018-09-01 00:00:00'                             # initialize start date
-end     = '2018-10-31 23:59:59'                             # initialize start date
+end     = '2018-11-07 23:59:59'                             # initialize start date
 mask = (platform.quote['USDHKD'].index > start) & (platform.quote['USDHKD'].index <= end)
 backtestperiod = platform.quote['USDHKD'].loc[mask]
-platform.initportfolio(10000000, 100)                       # 
-# start looping every 1 minute
+platform.initportfolio(10000000, 100)                       # reset initial cash + default handling fee
+#%% Backtesting
 prev = None
+# start looping every 1 minute
+print ('Start Backtesting...')
 for time, reference in backtestperiod.iterrows():
     """ 
     Read-Only Params:
@@ -119,12 +121,12 @@ for time, reference in backtestperiod.iterrows():
     if time.timestamp() % 86400 == 0:
         platform.updatepos(time)
  
-#%%
-# Copy Unrealized P&L to Realized P&L       
+#%% Export Portfolio 
 portfolio, tradelog = platform.exporttrades()
 temp_log = tradelog
 for i in range(len(temp_log)): 
     temp_log.loc[i, 'P&L'] = temp_log.loc[i, 'Unrealized P&L'] + temp_log.loc[i, 'Realized P&L']
-
+print ('Activities:')
 print (tradelog[['Product', 'Position', 'Open Rate', 'Close Rate', 'P&L']])
+print ('Summary:')
 print ('Initial:', round(portfolio['initial']), 'Final:', round(portfolio['cash']), 'P&L%:', round(portfolio['P&L'] * 100))

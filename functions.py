@@ -61,16 +61,22 @@ class backtest():
     
     def initdataset(self, dataset):
         self.datainfo = dataset
-        start_day           = datetime.datetime(2018, 8,  7,  1,  1,  0) 
-        end_day             = datetime.datetime(2018, 10, 31, 23, 59, 0)
-        days = pd.date_range(start_day, end_day, freq='min')
-        quoteref = pd.DataFrame({'Local Time': days})
-        quoteref = quoteref.set_index('Local Time')
+        valid_start = None
+        valid_end   = None
         for key, data in self.datainfo.items():
             if data is not 'Custom':
-                self.quote[key] = quoteref
+                # determine valid start and end of dataset
                 data = pd.read_excel(key + '.xlsx')
-                data = data.set_index('Local Time') 
+                if not valid_start or valid_start < min(data['Local Time']):
+                    valid_start = min(data['Local Time'])
+                if not valid_end or valid_end > max(data['Local Time']):
+                    valid_end   = max(data['Local Time'])
+                days            = pd.date_range(min(data['Local Time']), max(data['Local Time']), freq='min')
+                # create dataset for each item
+                quoteref = pd.DataFrame({'Local Time': days})
+                quoteref = quoteref.set_index('Local Time')
+                self.quote[key] = quoteref
+                data            = data.set_index('Local Time')                 
                 self.quote[key] = pd.merge(self.quote[key], data, left_index=True, how='left', right_index=True)
             #    market[key].plot(y='Bid', use_index=True)
                 self.quote[key].fillna(method='ffill', inplace=True)
@@ -78,7 +84,7 @@ class backtest():
         # Custom dataset
         self.quote['PUT']        = self.quote['HSI']
         self.quote['CALL']       = self.quote['HSI']
-        #    print (key, market[key].isna().sum())
+        print ('Dataset Range:', 'from', valid_start, 'to', valid_end)
         
     def is_eqmktopen(self, time):
         second = time.timestamp() % 86400
@@ -220,9 +226,9 @@ class backtest():
             self.portfolio['cash']                              = self.portfolio['cash'] - qty * self.forextohkd(time, product, rate) - handling
             # Report
             if (product == 'PUT' or product == 'CALL'):
-                print (time, 'Avl.Cash:', round(self.portfolio['cash']), product, '(', K, T, ')', pos, qty, '@', rate)
+                print (time, 'Avl.Cash:', round(self.portfolio['cash']), product, '(', K, T, ')', pos, qty, '@', round(rate, 2))
             else:
-                print (time, 'Avl.Cash:', round(self.portfolio['cash']), product, pos, qty, '@', rate)
+                print (time, 'Avl.Cash:', round(self.portfolio['cash']), product, pos, qty, '@', round(rate, 2))
             # Open Restriction
             self.opencheck(time, product, pos, qty, K, T, self.portfolio['cash'])
             # Append to trading log
@@ -254,7 +260,7 @@ class backtest():
                     self.portfolio['cash']                      = self.portfolio['cash'] + (self.forextohkd(time, self.trading_log.loc[i, 'Product'], self.trading_log.loc[i, 'Open Rate']) * self.trading_log.loc[i, 'Qty']) - self.portfolio['fee']
                     self.portfolio['cash']                      = self.portfolio['cash'] + self.trading_log.loc[i, 'Realized P&L']                    
                     # Report
-                    print (time, 'Avl.Cash:', round(self.portfolio['cash']), product, pos, self.trading_log.loc[i, 'Qty'], '@', self.trading_log.loc[i, 'Close Rate'], )
+                    print (time, 'Avl.Cash:', round(self.portfolio['cash']), product, pos, self.trading_log.loc[i, 'Qty'], '@', round(self.trading_log.loc[i, 'Close Rate'], 2))
                     # Close Restriction
                     self.closecheck(time, self.portfolio['cash'])
         
