@@ -49,16 +49,16 @@ print ('Start Backtesting...')
 for time, reference in backtestperiod.iterrows():
     """ 
     Read-Only Params:
-    quote['HSI'].loc[time].Close
-    quote['HSI'].loc[time].Volume
-    quote['VIX'].loc[time].Close
-    quote['VHSI'].loc[time].Close
-    quote['XAUHKD'].loc[time].Bid
-    quote['XAUHKD'].loc[time].Ask
-    quote['USDTRY'].loc[time].Bid
-    quote['USDTRY'].loc[time].Ask
-    quote['XRPUSD'].loc[time].Bid
-    quote['XRPUSD'].loc[time].Ask
+    platform.quote['HSI'].loc[time].Close
+    platform.quote['HSI'].loc[time].Volume
+    platform.quote['VIX'].loc[time].Close
+    platform.quote['VHSI'].loc[time].Close
+    platform.quote['XAUHKD'].loc[time].Bid
+    platform.quote['XAUHKD'].loc[time].Ask
+    platform.quote['USDTRY'].loc[time].Bid
+    platform.quote['USDTRY'].loc[time].Ask
+    platform.quote['XRPUSD'].loc[time].Bid
+    platform.quote['XRPUSD'].loc[time].Ask
     
     Paper Trade Methods:
     trade(time, 'XRPUSD', 'LONG',  100000)          # LONG FX Order
@@ -82,13 +82,19 @@ for time, reference in backtestperiod.iterrows():
     # Check if EQ market is opened
     if platform.is_eqmktopen(time): 
         # Long EQ conditions
-        if platform.quote['VHSI'].loc[time].Close - platform.quote['VHSI'].loc[prev].Close >= 1 or platform.quote['VIX'].loc[time].Close - platform.quote['VIX'].loc[prev].Close >= 1:
+        if (
+                platform.quote['VHSI'].loc[time].Close - platform.quote['VHSI'].loc[prev].Close >= 1 
+             or platform.quote['VIX'].loc[time].Close - platform.quote['VIX'].loc[prev].Close >= 1
+             ):
             if not platform.has_pos('HSI'):                     # Check if no position exists
                 platform.trade(time, 'HSI',  'SHORT', 100)
                 option_strike      = (int(platform.quote['HSI'].loc[time].Close / 200) - 2) * 200
                 platform.trade(time, 'CALL', 'LONG',  20, option_strike, time.month)
         # Close EQ conditions
-        if platform.quote['VHSI'].loc[prev].Close - platform.quote['VHSI'].loc[time].Close >= 1 or platform.quote['VIX'].loc[prev].Close - platform.quote['VIX'].loc[time].Close >= 1:
+        if (
+                platform.quote['VHSI'].loc[prev].Close - platform.quote['VHSI'].loc[time].Close >= 1 
+             or platform.quote['VIX'].loc[prev].Close - platform.quote['VIX'].loc[time].Close >= 1
+             ):
             if platform.has_pos('HSI'):                         # Check if position exists
                 platform.trade(time, 'HSI',  'CLOSE')
                 platform.trade(time, 'CALL', 'CLOSE')
