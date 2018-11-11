@@ -122,7 +122,7 @@ class backtest():
     #IV Assumptions: [ Interest rate is 0.15% and dividend yield is 4.24%, per year.]
     def option(self, time, option_type, S, K, month, r = 0.0015, v = 0.25, d = 0.0424):
         start   = time.date()
-        end     = BMonthEnd().rollforward(datetime.date(time.year, month, 1))
+        end     = BMonthEnd().rollforward(datetime.date(time.year, month, 1)).date()
         T       = np.busday_count(start, end)
         # espired
         if T <= 0:
@@ -131,7 +131,7 @@ class backtest():
         if K % 200 != 0: 
             error (time, 'Strike Price is in step of 200')
         # params
-        Tt      = T / 365
+        Tt      = T / 365.0     # float for 2.7
         
         d1      = (log (S / (K * exp(-r * Tt))) / (v * sqrt(Tt))) + 0.5 * v * sqrt(Tt)
         d2      = d1 - v * sqrt(Tt)
