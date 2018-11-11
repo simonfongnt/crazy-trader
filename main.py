@@ -135,4 +135,6 @@ for i in range(len(temp_log)):
 print ('Activities:')
 print (tradelog[['Product', 'Position', 'Open Rate', 'Close Rate', 'P&L']])
 print ('Summary:')
-print ('Initial:', round(portfolio['initial']), 'Final:', round(portfolio['cash']), 'P&L%:', round(portfolio['P&L'] * 100))
+print ('Initial Cash:', round(portfolio['initial']), 'Final Cash:', round(portfolio['cash']))
+print ('Unrealized P&L:', round(portfolio['Unrealized P&L']), 'Realized P&L:', round(portfolio['Realized P&L']))
+print ('Overall P&L:', round(portfolio['P&L']), 'P&L%:', round(portfolio['P&L%']))

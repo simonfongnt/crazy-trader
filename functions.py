@@ -322,5 +322,8 @@ class backtest():
         plt.show()
         # Calculate portfolio
         self.portfolio['incurred fee']   = self.trading_log['Handling'].sum()
-        self.portfolio['P&L']            = (self.portfolio['cash'] - self.portfolio['initial']) / self.portfolio['initial']     #%
+        self.portfolio['Unrealized P&L'] = self.trading_log['Unrealized P&L'].sum()
+        self.portfolio['Realized P&L']   = self.trading_log['Realized P&L'].sum()
+        self.portfolio['P&L']            = self.portfolio['Unrealized P&L'] + self.portfolio['Realized P&L']
+        self.portfolio['P&L%']           = self.portfolio['P&L'] / self.portfolio['initial'] * 100
         return self.portfolio, self.trading_log
