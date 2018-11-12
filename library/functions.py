@@ -8,6 +8,7 @@ Created on Fri Nov  9 00:06:55 2018
 #%% lLibrary
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
+import dataset
 import sys
 import re
 import pandas as pd
@@ -41,12 +42,15 @@ class Stop (Exception):
 def error(time, text):
     print (time, text)
     raise Stop ()
+    
 #%% classes
 class backtest():
     def __init__(self, cash, fee, dataset):
-        self.datainfo = {}
-        self.quote = {}
-        self.portfolio = {}
+        self.datainfo   = {}
+        self.quote      = {}
+        self.portfolio  = {}
+        self.validstart = None
+        self.validend   = None
         self.logcols = ['Product', 'Strike', 'Maturity', 'Position', 'Open Date', 'Open Rate', 'Qty', 'Close Date', 'Close Rate', 'Handling', 'Unrealized P&L', 'Realized P&L', 'P&L%']
         self.initportfolio(cash, fee)    
         self.initdataset(dataset)
@@ -61,37 +65,36 @@ class backtest():
     
     def initdataset(self, dataset):
         self.datainfo = dataset
-        valid_start = None
-        valid_end   = None
         for key, data in self.datainfo.items():
             if data is not 'Custom':
                 # determine valid start and end of dataset
-                data = pd.read_excel(key + '.xlsx')
-                if not valid_start or valid_start < min(data['Local Time']):
-                    valid_start = min(data['Local Time'])
-                if not valid_end or valid_end > max(data['Local Time']):
-                    valid_end   = max(data['Local Time'])
+                data = pd.read_excel('dataset/' + key + '.xlsx')
+                if not self.validstart or self.validstart < min(data['Local Time']):
+                    self.validstart = min(data['Local Time'])
+                if not self.validend or self.validend > max(data['Local Time']):
+                    self.validend   = max(data['Local Time'])
                 days            = pd.date_range(min(data['Local Time']), max(data['Local Time']), freq='min')
                 # create dataset for each item
                 quoteref = pd.DataFrame({'Local Time': days})
                 quoteref = quoteref.set_index('Local Time')
                 self.quote[key] = quoteref
-                data            = data.set_index('Local Time')                 
+                data            = data.set_index('Local Time')
                 self.quote[key] = pd.merge(self.quote[key], data, left_index=True, how='left', right_index=True)
             #    market[key].plot(y='Bid', use_index=True)
                 self.quote[key].fillna(method='ffill', inplace=True)
                 self.quote[key].fillna(method='bfill', inplace=True)
+                print ('Dataset', key, 'is loaded')
         # Custom dataset
         self.quote['PUT']        = self.quote['HSI']
         self.quote['CALL']       = self.quote['HSI']
-        print ('Dataset Range:', 'from', valid_start, 'to', valid_end)
+        print ('Dataset Range:', 'from', self.validstart, 'to', self.validend)
         
     def is_eqmktopen(self, time):
         second = time.timestamp() % 86400
         if time.weekday() < 6:
             if second < 3600:
                 return True
-            if second >= 33300 and second < 43200:
+            if second >= 33600 and second < 43200:
                 return True
             if second >= 46800 and second < 59700:
                 return True
@@ -122,7 +125,10 @@ class backtest():
     #IV Assumptions: [ Interest rate is 0.15% and dividend yield is 4.24%, per year.]
     def option(self, time, option_type, S, K, month, r = 0.0015, v = 0.25, d = 0.0424):
         start   = time.date()
-        end     = BMonthEnd().rollforward(datetime.date(time.year, month, 1)).date()
+        if month != 1:  # Jan Option is probably next year
+            end     = BMonthEnd().rollforward(datetime.date(time.year, month, 1)).date()
+        else:
+            end     = BMonthEnd().rollforward(datetime.date(time.year + 1, month, 1)).date()
         T       = np.busday_count(start, end)
         # espired
         if T <= 0:
@@ -159,11 +165,13 @@ class backtest():
     #    datainfo['HKDTRY']  = 'FX'  # Bid, Ask
     #    datainfo['USDTRY']  = 'FX'  # Bid, Ask
     #    datainfo['XRPUSD']  = 'FX'  # Bid, Ask
-        if   product.startswith('USD'):             # Change to HKDXXX
+        if rate == 0:                                   # Avoid Zero Division
+            return 0
+        elif   product.startswith('USD'):               # Change to HKDXXX
             return (self.quote['USDHKD'].loc[time].Ask / rate)
         elif product.startswith('HKD'):
             return (1 / rate)
-        elif product.endswith  ('USD'):            # Change to XXXHKD
+        elif product.endswith  ('USD'):                 # Change to XXXHKD
             return (rate * self.quote['USDHKD'].loc[time].Bid)
         else:
             return rate
@@ -184,7 +192,7 @@ class backtest():
                 return True
         return False
     
-    def opencheck(self, time, product, pos, qty, K, T, cash): 
+    def opencheck(self, time, product, pos, qty, K, T, rate, cash): 
         strike      = K
         maturity    = T               
         # Existing Order?
@@ -199,6 +207,8 @@ class backtest():
             if strike and maturity:                
                 if time.month > maturity:
                     error (time, 'invalid Option month...')
+                if rate == 0:
+                    error (time, 'Cannot purchase option on last date: 0 value')
             else:
                 error ('Option Strike or Maturity Missing...')
         # Enough $?
@@ -220,8 +230,14 @@ class backtest():
             if (product == 'PUT' or product == 'CALL'):
                 if strike and maturity and time.month <= maturity:
                     rate                                        = self.option(time, product, self.quote['HSI'].loc[time].Close, strike, maturity)
+                    if rate == 0:                                                                                                               # probably last date of month, Switch to next month option
+                        if maturity < 12:                                                                                                       # increment if not Dec
+                            maturity                            = maturity + 1
+                        else:                                                                                                                   # set to Jan otherwise
+                            maturity                            = 1
+                        rate                                    = self.option(time, product, self.quote['HSI'].loc[time].Close, strike, maturity)
             else:                
-                rate = self.getrate(time, product, pos)  
+                rate = self.getrate(time, product, pos)
             # Available Cash
             self.portfolio['cash']                              = self.portfolio['cash'] - qty * self.forextohkd(time, product, rate) - handling
             # Report
@@ -230,7 +246,7 @@ class backtest():
             else:
                 print (time, 'Avl.Cash:', round(self.portfolio['cash']), product, pos, qty, '@', round(rate, 2))
             # Open Restriction
-            self.opencheck(time, product, pos, qty, K, T, self.portfolio['cash'])
+            self.opencheck(time, product, pos, qty, K, T, rate, self.portfolio['cash'])
             # Append to trading log
             self.trading_log.loc[len(self.trading_log)]         = [product, strike, maturity, pos, time, rate, qty, None, None, handling, 0, 0, 0]
             
@@ -270,21 +286,42 @@ class backtest():
             rate                                                = self.getrate(time, self.trading_log.loc[i, 'Product'], self.trading_log.loc[i, 'Position'])
             if (product == 'PUT' or product == 'CALL'):
                 rate                                            = self.option(time, product, self.quote['HSI'].loc[time].Close, self.trading_log.loc[i, 'Strike'], self.trading_log.loc[i, 'Maturity'])
-                if time.month > self.trading_log.loc[i, 'Maturity'] and not self.trading_log.loc[i, 'Close Date']:
+                last_option_date = BMonthEnd().rollforward(datetime.date(time.year, time.month, 1)).date()
+                if time.month == self.trading_log.loc[i, 'Maturity'] and time.date() == last_option_date and not self.trading_log.loc[i, 'Close Date']:  
                     self.trading_log.loc[i, 'Close Date']       = time        
                     self.trading_log.loc[i, 'Close Rate']       = rate
-                    self.trading_log.loc[i, 'Unrealized P&L']   = 0
-                    
+                    self.trading_log.loc[i, 'Unrealized P&L']   = 0                    
+                    # Long Position - throw the option away
+                    premium = 0     # Cost of Option
+                    skdelta = 0     # Difference between Strike and Current Prices
                     if self.trading_log.loc[i, 'Position'] == 'LONG':
-                        self.trading_log.loc[i, 'Realized P&L'] = self.trading_log.loc[i, 'Qty'] * self.forextohkd(time, product, (self.trading_log.loc[i, 'Close Rate'] - self.trading_log.loc[i, 'Open Rate'])) - self.trading_log.loc[i, 'Handling']
+                        premium = self.forextohkd(time, product, (self.trading_log.loc[i, 'Close Rate'] - self.trading_log.loc[i, 'Open Rate']))
+                        if self.trading_log.loc[i, 'Product'] == 'PUT':
+                            # Option is valid
+                            if self.trading_log.loc[i, 'Strike'] > self.quote['HSI'].loc[time].Close:
+                                skdelta = self.trading_log.loc[i, 'Strike'] - self.quote['HSI'].loc[time].Close
+                        else:
+                            # Option is valid
+                            if self.trading_log.loc[i, 'Strike'] < self.quote['HSI'].loc[time].Close:
+                                skdelta = self.quote['HSI'].loc[time].Close - self.trading_log.loc[i, 'Strike']
+                    # Short Position - Obligation if pay for incurred loss
                     else:
-                        self.trading_log.loc[i, 'Realized P&L'] = self.trading_log.loc[i, 'Qty'] * self.forextohkd(time, product, (self.trading_log.loc[i, 'Open Rate'] - self.trading_log.loc[i, 'Close Rate'])) - self.trading_log.loc[i, 'Handling']
-                    
+                        premium = self.forextohkd(time, product, (self.trading_log.loc[i, 'Open Rate'] - self.trading_log.loc[i, 'Close Rate']))
+                        if self.trading_log.loc[i, 'Product'] == 'PUT':
+                            # if Option is valid
+                            if self.trading_log.loc[i, 'Strike'] > self.quote['HSI'].loc[time].Close:
+                                skdelta = self.quote['HSI'].loc[time].Close - self.trading_log.loc[i, 'Strike']
+                        else:
+                            # if Option is valid
+                            if self.trading_log.loc[i, 'Strike'] < self.quote['HSI'].loc[time].Close:
+                                skdelta = self.trading_log.loc[i, 'Strike'] - self.quote['HSI'].loc[time].Close
+                    self.trading_log.loc[i, 'Realized P&L'] = self.trading_log.loc[i, 'Qty'] * (premium + skdelta) - self.trading_log.loc[i, 'Handling']                    
                     self.trading_log.loc[i, 'P&L%']             = int((self.trading_log.loc[i, 'Unrealized P&L'] + self.trading_log.loc[i, 'Realized P&L']) / (self.trading_log.loc[i, 'Qty'] * self.forextohkd(time, product, self.trading_log.loc[i, 'Open Rate'])) * 100)
-                    
                     # Get Cash        
                     self.portfolio['cash']                      = self.portfolio['cash'] + (self.forextohkd(time, product, self.trading_log.loc[i, 'Open Rate']) * self.trading_log.loc[i, 'Qty']) - self.portfolio['fee']
-                    self.portfolio['cash']                      = self.portfolio['cash'] + self.trading_log.loc[i, 'Realized P&L']
+                    self.portfolio['cash']                      = self.portfolio['cash'] + self.trading_log.loc[i, 'Realized P&L']                  
+                    # Report
+                    print (time, 'Avl.Cash:', round(self.portfolio['cash']), self.trading_log.loc[i, 'Product'], 'CLOSE', self.trading_log.loc[i, 'Qty'], 'Mature @', self.quote['HSI'].loc[time].Close)
                     # Enough $?
                     if self.portfolio['cash'] <= 0:
                         error (time, 'No more Money...')
@@ -326,4 +363,32 @@ class backtest():
         self.portfolio['Realized P&L']   = self.trading_log['Realized P&L'].sum()
         self.portfolio['P&L']            = self.portfolio['Unrealized P&L'] + self.portfolio['Realized P&L']
         self.portfolio['P&L%']           = self.portfolio['P&L'] / self.portfolio['initial'] * 100
-        return self.portfolio, self.trading_log
+        # Deep Copy to avoid retest tendence
+        return self.portfolio.copy(), self.trading_log.copy()
+    
+    def plot(self, products):  
+        color = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan']
+        ln = None
+        ax = {}
+        ln = {}
+        fig = plt.figure()
+        #ax1 = fig.add_subplot(111)
+        ax[products[0]] = fig.add_subplot(111)
+        for i in range(len(products)):
+            if i > 0:
+                ax[products[i]] = ax[products[0]].twinx()  # instantiate a second axes that shares the same x-axis
+            ax[products[i]].set_xlabel('time (s)')
+            ax[products[i]].set_ylabel(products[i], color=color[i])
+            if self.datainfo[products[i]] == 'FX':
+                ln[products[i]] = ax[products[i]].plot(self.quote[products[i]].index, self.quote[products[i]].Bid, color=color[i], label = products[i])
+            else:
+                ln[products[i]] = ax[products[i]].plot(self.quote[products[i]].index, self.quote[products[i]].Close, color=color[i], label = products[i])
+            ax[products[i]].tick_params(axis='y', labelcolor=color[i])
+            if i > 0:
+                lns = lns + ln[products[i]]
+            else:
+                lns = ln[products[0]]
+        #lns = ln1+ln2+ln3+ln4
+        labs = [l.get_label() for l in lns]
+        ax[products[0]].legend(lns, labs, loc='best')
+        plt.show()
