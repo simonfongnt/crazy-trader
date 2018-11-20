@@ -1,7 +1,8 @@
 # Crazy Trader Backtest Platform
  This platform aimed to offer backtesting to verify the trading strategy. Limited minute-based dataset are provided in the this project. This backtest algorithm assumes that trading activities are operated in Hong Kong such that the trading hour is referred in Hong Kong Time Zone as follows:
- Trading Hours (HKT Timezone) Mon - Fri: 
-     HSI Derivatives(Day Session)    : 09:15 - 12:00, 13:00 - 16:30
+ 
+    Trading Hours (HKT Timezone) Mon - Fri: 
+    HSI Derivatives(Day Session)    : 09:15 - 12:00, 13:00 - 16:30
     
                    (Night Session)  : 17:15 - 01:00
                    
@@ -15,9 +16,10 @@
     
 During the backtesting, the algorithm restricts to ensure the following measures are not violated. Backtest would be otherwise be terminated.
  Restrictions:
-     Trading must be in trading hours
+ 
+    Trading must be within trading hours
     
-    Trading must be in sufficnet cash
+    Trading must be with sufficnet cash
     
     Option Strike Price is in step of 200
     
@@ -25,7 +27,9 @@ There are also assumptions on incurred cost and price calculation as well.
     
 Assumptions:
     
-    Option price based on Interest rate is 0.15% and dividend yield is 4.24%, per year
+    Option premium is calculated by Black-Scholes formula with HSI price, Strike price, maturity, interest rate & dividend yield
+    
+    Based on HKEX assumption, Interest rate is 0.15% and dividend yield is 4.24%, per year
     
     no overnight fee incurred
     
@@ -36,7 +40,8 @@ In order to utilize the algorithm, dataset in excel format should be prepared wi
      'Custom' (custom defined params) e.g. HSI options
      e.g. HSI.xls allows to use 'HSI' in functions such as platform.quote['HSI'].loc[time].Close
  Functions (Long with Ask Price, Short with Bid Price):
-     Quotation and Volume (EQ):
+     
+    Quotation and Volume (EQ):
     
     quote['HSI'].loc[time].Close
     
@@ -48,7 +53,7 @@ In order to utilize the algorithm, dataset in excel format should be prepared wi
     
     quote['VIX'].loc[time].Close
     
-    Quotation (FX):
+    Quotation (Forex, Commodity, Crypto):
     
     quote['XAUHKD'].loc[time].Bid
     
