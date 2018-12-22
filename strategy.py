@@ -4,17 +4,24 @@
 Description:
     This demo shows the simple EQ Short Trading with open price, high price and low price repeatedly captured during the trading hour
 
-    Open HSI Short Position with Qty 100, Long Call with Qty 20 and Short Put with Qty 20 if either one of the conditions is matched:
-        - 0005.HK drops 1% from the open price
-        - 0700.HK drops 1% from the open price
-        - VHSI increases by 1 point
-        - VIX increases by 1 point
-
     The algorithm restricts only one position per product.
-
-    Close all Positions if either one of the condtions is matched:
-        - VHSI decreases by 1 point
-        - VIX decreases by 1 point
+    
+    For HSI derivatives:
+    Open HSI Position with at most Qty 150 with arbitary 50 Qty of  Option for Hedging at 10:00 on Trading Day
+        - Volatility is high when VHSI > 20
+        - Trend is based on Volume-Price Trend accumulated every trading day and reset after the trade
+    Stoploss if index drops 1% of investment
+    Close all Positions at 16:10
+    
+    For Forex Turkish Lira:
+    Open and Close Positions solely based on event based strategy
+    
+    For Crypto Ripple:
+    Open XRPUSD Position with at most Qty 420000 (only short position is allowed)
+        - Volatility is high if VIX is 2 point higher than the open rate
+        - Trend is based on Volume-Price Trend accumulated every trading day and reset after the trade
+    Stoploss if index drops 1% of investment
+    Close all Positions 5 days after the trade or VIX drops below the open rate
 """
 # %% Library & Initialize Dataset and Backtesting Platform
 from library.functions import *
