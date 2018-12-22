@@ -7,7 +7,7 @@ Description:
     The algorithm restricts only one position per product.
     
     For HSI derivatives:
-    Open HSI Position with at most Qty 150 with arbitary 50 Qty of  Option for Hedging at 10:00 on Trading Day
+    Open HSI Position with at most Qty 150 with arbitary 50 Qty of Option for Hedging at 10:00 on Trading Day
         - Volatility is high when VHSI > 20
         - Trend is based on Volume-Price Trend accumulated every trading day and reset after the trade
     Stoploss if index drops 1% of investment
@@ -22,6 +22,10 @@ Description:
         - Trend is based on Volume-Price Trend accumulated every trading day and reset after the trade
     Stoploss if index drops 1% of investment
     Close all Positions 5 days after the trade or VIX drops below the open rate
+    
+    NOTE:
+        Option quantity is arbitary
+        Actual amount has to be decided via Risk Management
 """
 # %% Library & Initialize Dataset and Backtesting Platform
 from library.functions import *
