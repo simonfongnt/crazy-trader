@@ -77,4 +77,37 @@ In order to utilize the algorithm, dataset in excel format should be prepared wi
     
     platform.has_pos('HSI')                         # Check if trading log already ahs HSI positio
     
-and so on....
+# Performance
+Performance measures the statistic achieved by the trading record. The metrics are average trade, largest win, largest loss, win/loss ratio and max drawdown (MDD) shown as follows:
+
+| Sector         | Return (%)     | Win/Loss Ratio | Largest Win    | Largest Loss   |
+| -------------- | -------------- | -------------- | -------------- | -------------- |
+| EQ             | 3.08           | 0.76           | 77050          | -107450        |
+| FX             | 21.57          | 2/0            | 545200         | N/A            |
+| Crypto         | 43.05          | 1.80           | 214162         | -23225         |
+
+|                | Return (%)     | Win/Loss Ratio | Average Trade  | MDD            |
+| -------------- | -------------- | -------------- | -------------- | -------------- |
+| Portfolio      | 14.47          | 0.84           | 8823           | 1.3%           |
+
+Table 8-1 Detailed Portfolio Performance
+
+With initial 10B HKD investment, the overall return was 1.44B HKD from 1st Sep 2018 to 1st Dec 2018 which is 14.47%. The exposure for HKDTRY Forex was expecting the least return and most of the exposure was focused on equity sector. However, the resultant portfolio was mainly gained from Forex (8% of portfolio) and Crypto sectors (4% of portfolio) and, fortunately, Forex did not require to switch exposure to commodity sector in gold future. 
+
+Since the HSI trading is day trade and the strategies consists of 1% stoploss condition, the drawdown is limited with reasonably profit. Hence the maximum drawdown of the portfolio is 1.3% which is considered to be the worth for investment.
+
+The strategy for HSI derivative trading was not optimized as expected. Although the market view suggested to employ option chain data to indicate the volatility and trend of the HSI future, this function was unable to be implemented because of vast quantity of minutes data of HSI options. The trend and volatility indicators were based on Volume-Price Trends and VHSI respectively. Thereof the performance was not ideal with single indicator for each of them.
+ 
+# Conclusion
+The portfolio achieved 14.47% profits with top-down analysis plus numerous trading strategies on various instruments/products. The HSI derivative strategy has to be optimized by employing multiple indicators for trend and volatility indications. There is an idea to utilize the option chain which requires high amount of option chain minutes data for training and a period of time for calibration and backtesting, as the indicators as well. 
+
+|                | Return (%)     | Win/Loss Ratio | Average Trade  | MDD            |
+| -------------- | -------------- | -------------- | -------------- | -------------- |
+| Portfolio      | 14.47          | 0.84           | 8823           | 1.3%           |
+
+Table 9-1 Portfolio Performance
+
+The global market shall remain bearish next season because of the balance sheet unwinding, US-China trade war and Brexit settlement. The possibility of another rise of tariffs by US on China’s export remains high and there is a sign of hard Brexit between UK and Europe in March. The Hong Kong market will thus continue to be affected by both of the events and in bearish trend as well.
+
+Nonetheless, the performance of this portfolio depends on HSI derivatives trading strategy efficiency, Turkish economic recovery, cryptocurrency market status in near future. Since the HKDTRY forex is approaching to the level of August that before the US tariff sanction, the expected return of this asset may be lower with existing event-driven strategy. After the regulation on cryptocurrency market, the bearish market trend is expected to be continued so the portfolio shall remain efficient in the near future.
+
