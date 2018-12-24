@@ -213,54 +213,77 @@ for time, reference in backtestperiod.iterrows():
 #    # Check if FX and Crypto markets are opened
 #    if platform.is_fxmktopen(time):
 #        # Trade HKDTRY - Short Position only based on Event Driven Strategy
-#        if ( 
-#                time.timestamp() == datetime.datetime(2018,  9, 1, 17, 0, 0).timestamp()            # Trade on 1st of Sep
+#        if (    # Trade on 1st of Sep
+#                time.timestamp() == datetime.datetime(2018,  9, 1, 17, 0, 0).timestamp()            
 #                ):
-#            platform.trade(time, 'HKDTRY', 'SHORT', 3000000)                                        # Short HKDTRY
-#        if ( 
-#                time.timestamp() == datetime.datetime(2018, 10, 15, 17, 0, 0).timestamp()           # Trade on 15th of Oct
+#            # Short HKDTRY
+#            platform.trade(time, 'HKDTRY', 'SHORT', 3000000)                                        
+#        if (    # Trade on 15th of Oct
+#                time.timestamp() == datetime.datetime(2018, 10, 15, 17, 0, 0).timestamp()           
 #                ):
-#            platform.trade(time, 'HKDTRY', 'CLOSE')                                                 # Close HKDTRY
-#            platform.trade(time, 'HKDTRY', 'SHORT', 4000000)                                        # Short HKDTRY
-#        if ( 
-#                time.timestamp() == datetime.datetime(2018, 11, 30, 17, 0, 0).timestamp()           # Close on 30th of Nov
+#            # Close HKDTRY
+#            platform.trade(time, 'HKDTRY', 'CLOSE')      
+#            # Short HKDTRY                                           
+#            platform.trade(time, 'HKDTRY', 'SHORT', 4000000)                                        
+#        if (    # Close on 30th of Nov
+#                time.timestamp() == datetime.datetime(2018, 11, 30, 17, 0, 0).timestamp()           
 #                ):
-#            platform.trade(time, 'HKDTRY', 'CLOSE')                                                 # Close HKDTRY
+#            # Close HKDTRY
+#            platform.trade(time, 'HKDTRY', 'CLOSE')                                                 
 #            
 #        # Trade XRPUSD - Short Position only based on VIX
-#        if time.time() == datetime.time(15, 16, 0):                                                 # VIX market open
-#            vix_open = platform.quote['VIX'].loc[time].Close                                        # Capture Open Price
-#            if not platform.has_pos('XRPUSD'):                                                      # no position
-#                xrp_date = None                                                                     # Clear open date for new trade
-#        this_vix = platform.quote['VIX'].loc[time].Close                                            # Capture Current Price
+#        # VIX market open
+#        if time.time() == datetime.time(15, 16, 0):     
+#            # Capture Open Price                                            
+#            vix_open = platform.quote['VIX'].loc[time].Close   
+#            # no position                                     
+#            if not platform.has_pos('XRPUSD'):     
+#                # Clear open date for new trade                                                 
+#                xrp_date = None      
+#        # Capture Current Price                                                               
+#        this_vix = platform.quote['VIX'].loc[time].Close                                            
 #        
-#        if ( 
-#                not platform.has_pos('XRPUSD')                                                      # No Position of Ripple
-#            and not xrp_date                                                                        # No Trade today
-#            and this_vix - vix_open > 2                                                             # VIX rises 2 points above open price
+#        if (    # No Position of Ripple
+#                not platform.has_pos('XRPUSD')        
+#                # No Trade today                                              
+#            and not xrp_date           
+#                # VIX rises 2 points above open price                                                             
+#            and this_vix - vix_open > 2                                                             
 #                ):           
-#            platform.trade(time, 'XRPUSD', 'SHORT', 420000)                                         # Open Short Position
-#            xrp_rate = platform.quote['XRPUSD'].loc[time].Ask                                       # Note down trade rate
-#            xrp_vix = platform.quote['VIX'].loc[time].Close                                         # Note down VIX at trade
-#            xrp_date = time                                                                         # Note down trade date
+#            # Open Short Position
+#            platform.trade(time, 'XRPUSD', 'SHORT', 420000)   
+#            # Note down trade rate                                      
+#            xrp_rate = platform.quote['XRPUSD'].loc[time].Ask    
+#            # Note down VIX at trade                                   
+#            xrp_vix = platform.quote['VIX'].loc[time].Close     
+#            # Note down trade date                                    
+#            xrp_date = time                                                                         
 #
 #        # Close conditions
-#        if xrp_date:                                                                                # Trade is done
-#            xrp_delta = xrp_date - time                                                             # calculate date after open postion
+#        # Trade is done
+#        if xrp_date:      
+#            # calculate date after open postion                                                                          
+#            xrp_delta = xrp_date - time                                                             
 #
-#        if (    
-#                platform.has_pos('XRPUSD')                                                          # Check if position exists
-#            and xrp_date                                                                            # trade date exists
+#        if (    # Check if position exists
+#                platform.has_pos('XRPUSD')               
+#                # trade date exists                                           
+#            and xrp_date                                                                            
 #            ):
-#            xrp_loss = float(platform.quote['XRPUSD'].loc[time].Ask - xrp_rate) /  xrp_rate         # calculate loss rate for stoploss
-#            if (
-#                    xrp_delta.days >= 5                                                             # 5 days after the trade
-#                or  vix_open - this_vix > 0                                                         # VIX drop below VIX at trade
-#                or  xrp_loss > 0.01                                                                 # Stoploss: 1%
-#            ):
-#                platform.trade(time, 'XRPUSD', 'CLOSE')                                             # Close XRP Future
-#                xrp_rate = None                                                                     # Clear trade rate
-#                xrp_vix  = None                                                                     # Clear VIX at trade
+#            # calculate loss rate for stoploss
+#            xrp_loss = float(platform.quote['XRPUSD'].loc[time].Ask - xrp_rate) /  xrp_rate         
+#            if (    # 5 days after the trade
+#                    xrp_delta.days >= 5         
+#                    # VIX drop below VIX at trade                                                    
+#                or  vix_open - this_vix > 0                
+#                    # Stoploss: 1%                                         
+#                or  xrp_loss > 0.01                                                                 
+#            ):  # Close XRP Future
+#                platform.trade(time, 'XRPUSD', 'CLOSE')     
+#                # Clear trade rate                                        
+#                xrp_rate = None         
+#                # Clear VIX at trade                                                            
+#                xrp_vix  = None                                                                     
 
     prev = time  # Save this time for next loop
 
