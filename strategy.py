@@ -50,8 +50,6 @@ def getvpt(prev_vpt, volume, prev_close, this_close):
     this_vpt = prev_vpt + volume * (this_close - prev_close) / prev_close
     return this_vpt
 # %% Backtest Params
-start = platform.validstart  # initialize start date
-end = platform.validend  # initialize start date
 start = datetime.datetime(2018, 9, 1, 0, 0, 0)  # initialize start date
 end = datetime.datetime(2018, 12, 1, 0, 0, 0)  # initialize start date
 mask = (platform.quote['USDHKD'].index > start) & (platform.quote['USDHKD'].index <= end)
