@@ -440,7 +440,8 @@ class backtest():
         # Existing Order?
         for i in range(len(self.trading_log)):
             if self.trading_log.loc[i, 'Product'] == product and not self.trading_log.loc[i, 'Close Date']:
-                return True
+                return self.trading_log.loc[i, 'Position']
+#                return True
         return False
     
     def opencheck(self, time, product, pos, qty, K, T, rate, cash): 

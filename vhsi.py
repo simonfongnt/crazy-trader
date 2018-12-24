@@ -65,13 +65,18 @@ for time, reference in backtestperiod.iterrows():
                 time.time() == datetime.time(16, 10, 0)  
         ):
             # Close Existing Position
-            platform.trade(time, 'VHSI', 'CLOSE')  
             # High Volatility
-            if platform.has_pos('HSI') > 16:
-                platform.trade(time, 'VHSI', 'SHORT', 5000)
+            if platform.quote['VHSI'].loc[time].Close > 16:
+                if platform.has_pos('VHSI') is not 'SHORT':                    
+                    if platform.has_pos('VHSI'):
+                        platform.trade(time, 'VHSI', 'CLOSE')  
+                    platform.trade(time, 'VHSI', 'SHORT', 5000)
             # Low Volatility
-            elif platform.has_pos('HSI') < 16:    
-                platform.trade(time, 'VHSI', 'LONG', 5000)
+            elif platform.quote['VHSI'].loc[time].Close < 16:  
+                if platform.has_pos('VHSI') is not 'LONG':                      
+                    if platform.has_pos('VHSI'):
+                        platform.trade(time, 'VHSI', 'CLOSE')  
+                    platform.trade(time, 'VHSI', 'LONG', 5000)
                 
     # EQ is not in trading hours
     else:
